@@ -1,0 +1,19 @@
+extends ../layout
+
+block content
+    .row
+        p#stats #{character}
+    .row
+        div.col-sm-2
+            button.btn-info#test(type="button")
+                | Test Button
+    script.
+        var csrf = $('meta[name="csrf-token"]').attr('content')
+        $("#test").click(function() {
+            $.post("/game/test", {_csrf: csrf}, function(data){
+               console.log(data)
+               var astring = JSON.stringify(data)
+               $("#stats").empty()
+               $("#stats").append(""+astring)
+            })
+        })

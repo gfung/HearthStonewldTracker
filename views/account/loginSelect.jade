@@ -1,0 +1,52 @@
+extends ../layout
+
+block content
+    .page-header
+        h3 Create New Character
+    .row
+        button.btn-info(type='button', onclick="toggle();")
+            | New Character
+    form(method="post")
+        input(type='hidden', name='_csrf', value=_csrf)
+        .row.showandtell
+            .col-sm-1
+                | Name:
+            .col-sm-2
+                input#charname(type="text", name="charname")
+        .row.showandtell
+            .col-sm-1 Species:
+            .col-sm-1
+                select#race(name="species")
+                    option Human
+                    option Not Human
+        .row.showandtell
+            .col-sm-1 Gender:
+            .col-sm-1
+                select#gender(name="gender")
+                    option Male
+                    option Female
+        .row.showandtell
+            .col-sm-1
+                button.btn-info(type="submit")
+                    | Create
+    hr
+    h3 Select Your Character
+    hr
+    // get user's list of char and post here
+    ul
+        for each in charlist
+            form(method="post", action="/game")
+                input(type='hidden', name='_csrf', value=_csrf)
+                input(type='hidden', name='charID', value=each._id)
+                button.col-sm-2.btn-info(type="submit")= each.name
+        else
+            | No Characters
+    script.
+        $(".showandtell").hide();
+        function toggle() {
+            $(".showandtell").toggle();
+        }
+        //load these when document is ready
+        $(document).ready(function(){
+            //console.log('document ready')
+        })

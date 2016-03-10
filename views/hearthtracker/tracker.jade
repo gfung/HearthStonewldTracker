@@ -1,0 +1,123 @@
+extends ../layout
+
+block content
+    h1 Hearthstone Win tracker
+    hr
+    .row#stats
+        input#yourdata(type="hidden" value='#{data}')
+    .row
+        button.btn-info(type="button" onclick="toggle();")
+            | New Game Data
+    .row#add_data
+        form(method="post", action="/hearthtrack")
+            input(type='hidden', name='_csrf', value=_csrf)
+            .row#newData
+                div
+                    .col-sm-2
+                        | Game
+                    select#game.col-sm-2(name="game")
+                        option(value="hearthstone" selected) Hearthstone
+            .row
+                div
+                    .col-sm-2
+                        | Game Type
+                    select#game_type.col-sm-2(name="game_type")
+                        option(value="Arena" selected) Arena
+                        option(value="Other") Other
+                        option(value="Ranked") Ranked
+                        option(value="Unranked") Unranked
+            hr
+            .row
+                div
+                    .col-sm-2
+                        | Your Hero
+                    select#yourhero.col-sm-2(name="my_hero")
+                        option(value="hunter" selected) hunter
+                        option(value="mage") mage
+                        option(value="warlock") warlock
+                        option(value="warrior") warrior
+                        option(value="druid") druid
+                        option(value="rogue") rogue
+                        option(value="paladin") paladin
+                        option(value="priest") priest
+            .row
+                .div
+                    .col-sm-2
+                        | Enemy Hero
+                    select#enemyhero.col-sm-2(name="enemy_hero")
+                        option(value="hunter" selected) hunter
+                        option(value="mage") mage
+                        option(value="warlock") warlock
+                        option(value="warrior") warrior
+                        option(value="druid") druid
+                        option(value="rogue") rogue
+                        option(value="paladin") paladin
+                        option(value="priest") priest
+                    .col-sm-1
+                        | Outcome
+                    select#winorlose.col-sm-2(name="win")
+                        option(value="1" selected) Win
+                        option(value="0") Lose
+            div#enemies
+            hr
+            .row#arena_more_oppenents
+                div
+                    .col-sm-2
+                        a(href='#' onclick="add();")
+                            i(class="fa fa-plus")
+                            | Add Another Opponent
+            .row
+                .col-sm-2
+                    | Date of Game :
+                input#date.col-sm-2(type="date" name="date")
+            .row
+                p.col-sm-2 Notes :
+                textarea#notes(type="text" name="notes")
+            .row
+                .col-sm-2
+                    button.btn-info(type="submit") Submit Data
+    script(src="//d3js.org/d3.v3.min.js" charset="utf-8")
+    script.
+        //vars
+        var enemies = 1;
+        //functions ===================
+        //check arena option
+        function arenaCheck() {
+            if( $('#game_type').val() == "Arena") {
+                $('#arena_losses').show()
+                $('#arena_wins').show()
+                $('#arena_more_oppenents').show()
+            } else{
+                $('#arena_wins').hide()
+                $('#arena_losses').hide()
+                $('#arena_more_oppenents').hide()
+                $('#enemies').empty()
+                
+            }
+        };
+        //toggle
+        function toggle() {
+            $('#add_data').toggle();
+        };
+        //add more enemies
+        function add() {
+            if(enemies < 11){
+                enemies++;
+                //#'+enemies+'
+                $('#enemies').append('<br><div class="row"><div class="div"><div class="col-sm-2">Enemy Hero</div><select id="enemyhero" name="enemy_hero" class="col-sm-2"><option value="hunter" selected="">hunter</option><option value="mage">mage</option><option value="warlock">warlock</option><option value="warrior">warrior</option><option value="druid">druid</option><option value="rogue">rogue</option><option value="paladin">paladin</option><option value="priest">priest</option></select><div class="col-sm-1">Outcome</div><select id="winorlose" name="win" class="col-sm-2"><option value="1" selected="">Win</option><option value="0">Lose</option></select></div></div>')
+                
+            }
+        }
+        //things to do on load ===================
+        $('#add_data').hide();
+        //select option functions
+        $('#game_type').change(function(){
+            arenaCheck();
+        })
+        //document ready do this! ===================
+        $(document).ready(function(){
+            $('#date').val(new Date());
+            arenaCheck();
+            var parseData = $('#yourdata').val().toJsonObject()
+            console.log(parseData)
+        })
