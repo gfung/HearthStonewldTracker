@@ -4,10 +4,53 @@ block content
     h1 Hearthstone Win tracker
     hr
     .row#stats
-        input#yourdata(type="hidden" value='#{data}')
+        div
+            input#yourdata(type="hidden" value='#{data}')
+            button.btn-info(type="button" onclick="postData('week')")
+                | This Week
+            button.btn-info(type="button" onclick="postData('month')")
+                | This Month
+            //button.btn-info(type="button" onclick="postData('all')")
+                //| All Time
+    hr
     .row
-        button.btn-info(type="button" onclick="toggle();")
-            | New Game Data
+        div
+            | Filters
+        div
+            | My Class : 
+            select#filters
+                option(value="" selected) 
+                option(value="hunter" ) hunter
+                option(value="mage") mage
+                option(value="warlock") warlock
+                option(value="warrior") warrior
+                option(value="druid") druid
+                option(value="rogue") rogue
+                option(value="paladin") paladin
+                option(value="priest") priest
+        div
+            | Opponent Class : 
+            select#filters
+                option(value="" selected) 
+                option(value="hunter" ) hunter
+                option(value="mage") mage
+                option(value="warlock") warlock
+                option(value="warrior") warrior
+                option(value="druid") druid
+                option(value="rogue") rogue
+                option(value="paladin") paladin
+                option(value="priest") priest
+    hr
+    .row
+        div#chartTitle
+        div#aChart
+            canvas#myChart(width="400" height="400")
+    .row
+        div#yourstats
+    .row
+        div
+            button.btn-info(type="button" onclick="toggle();")
+                | New Game Data
     .row#add_data
         form(method="post", action="/hearthtrack")
             input(type='hidden', name='_csrf', value=_csrf)
@@ -76,10 +119,11 @@ block content
             .row
                 .col-sm-2
                     button.btn-info(type="submit") Submit Data
-    script(src="//d3js.org/d3.v3.min.js" charset="utf-8")
+    script(src='/js/lib/Chart.min.js')
     script.
         //vars
         var enemies = 1;
+        var csrf = $('meta[name="csrf-token"]').attr('content')
         //functions ===================
         //check arena option
         function arenaCheck() {
@@ -104,8 +148,7 @@ block content
             if(enemies < 11){
                 enemies++;
                 //#'+enemies+'
-                $('#enemies').append('<br><div class="row"><div class="div"><div class="col-sm-2">Enemy Hero</div><select id="enemyhero" name="enemy_hero" class="col-sm-2"><option value="hunter" selected="">hunter</option><option value="mage">mage</option><option value="warlock">warlock</option><option value="warrior">warrior</option><option value="druid">druid</option><option value="rogue">rogue</option><option value="paladin">paladin</option><option value="priest">priest</option></select><div class="col-sm-1">Outcome</div><select id="winorlose" name="win" class="col-sm-2"><option value="1" selected="">Win</option><option value="0">Lose</option></select></div></div>')
-                
+                $('#enemies').append('<div class="row"><div class="div"><div class="col-sm-2">Enemy Hero</div><select id="enemyhero" name="enemy_hero" class="col-sm-2"><option value="hunter" selected="">hunter</option><option value="mage">mage</option><option value="warlock">warlock</option><option value="warrior">warrior</option><option value="druid">druid</option><option value="rogue">rogue</option><option value="paladin">paladin</option><option value="priest">priest</option></select><div class="col-sm-1">Outcome</div><select id="winorlose" name="win" class="col-sm-2"><option value="1" selected="">Win</option><option value="0">Lose</option></select></div><a onclick="$(this).parent().remove();"><i class="fa fa-minus col-sm-1"></i></a></div>')
             }
         }
         //things to do on load ===================
@@ -114,10 +157,213 @@ block content
         $('#game_type').change(function(){
             arenaCheck();
         })
+        
+        var time_all=[];
+        
+        //chart options
+        var options = {
+
+            ///Boolean - Whether grid lines are shown across the chart
+            scaleShowGridLines : true,
+
+            //String - Colour of the grid lines
+            scaleGridLineColor : "rgba(0,0,0,.05)",
+
+            //Number - Width of the grid lines
+            scaleGridLineWidth : 1,
+
+            //Boolean - Whether to show horizontal lines (except X axis)
+            scaleShowHorizontalLines: true,
+
+            //Boolean - Whether to show vertical lines (except Y axis)
+            scaleShowVerticalLines: true,
+
+            //Boolean - Whether the line is curved between points
+            bezierCurve : true,
+
+            //Number - Tension of the bezier curve between points
+            bezierCurveTension : 0.4,
+
+            //Boolean - Whether to show a dot for each point
+            pointDot : true,
+
+            //Number - Radius of each point dot in pixels
+            pointDotRadius : 4,
+
+            //Number - Pixel width of point dot stroke
+            pointDotStrokeWidth : 1,
+
+            //Number - amount extra to add to the radius to cater for hit detection outside the drawn point
+            pointHitDetectionRadius : 20,
+
+            //Boolean - Whether to show a stroke for datasets
+            datasetStroke : true,
+
+            //Number - Pixel width of dataset stroke
+            datasetStrokeWidth : 2,
+
+            //Boolean - Whether to fill the dataset with a colour
+            datasetFill : true,
+
+            //String - A legend template
+            legendTemplate : "<ul class=\"<%=name.toLowerCase()%>-legend\"><% for (var i=0; i<datasets.length; i++){%><li><span style=\"background-color:<%=datasets[i].strokeColor%>\"></span><%if(datasets[i].label){%><%=datasets[i].label%><%}%></li><%}%></ul>"
+
+        };
+        
+        function postData(spacetime){
+            
+            $("#aChart").empty();
+            $("#aChart").append("<canvas id='myChart' width='400' height='400'>");
+            var time_length=[];
+            var postData; // {_csrf:csrf};
+            var sundaydate = new Date().getDate() - new Date().getDay();
+            var nextsunday = (6 - new Date().getDay() + new Date().getDate())+1;
+            var startday = new Date(new Date().getFullYear(), new Date().getMonth(), sundaydate);
+            var endday = new Date(new Date().getFullYear(), new Date().getMonth(), nextsunday);
+            var thismonth = new Date(new Date().getYear(), new Date().getMonth()+1, 0).getDate()
+            var firstofmonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+            var i;
+            for (i=1; i <= thismonth;i++){
+                time_length.push(i);
+            }
+            var lastofmonth = new Date(new Date().getFullYear(), new Date().getMonth(), i-1);
+            switch(spacetime) {
+                case 'week':
+                    time_length = ["Sunday", "Monday", "Tuedsay", "Wednesday", "Thursday", "Friday", "Saturday"];
+                    postData={_csrf:csrf, start:startday, end:endday};
+                    break;
+                case 'month':
+                    postData={_csrf:csrf, start:firstofmonth, end:lastofmonth};
+                    break;
+                default:
+                    time_length = ["Sunday", "Monday", "Tuedsay", "Wednesday", "Thursday", "Friday", "Saturday"];
+                    postData={_csrf:csrf, start:startday, end:endday};
+            }
+            
+            $.post('hearthtrack/userdata', postData,function(userdata){
+                //separate wins and losses
+                var totalwins=0;
+                var totallosses=0;
+                var j;
+                var windata=[];
+                var losedata=[];
+                var k;
+                var gamedate;
+                if (spacetime == undefined ) {
+                    windata=[0,0,0,0,0,0,0];
+                    losedata=[0,0,0,0,0,0,0];
+                    for (k=0;k<windata.length;k++){
+                        for (j=0;j<userdata.length;j++){
+                            gamedate = new Date(userdata[j].date).getDay();
+                            if ( gamedate == (startday.getDay()+k) ){
+                                if( userdata[j].win[0] == true ){
+                                    windata[k+1]++
+                                    totalwins++
+                                }else{
+                                    losedata[k+1]++
+                                    totallosses++
+                                }
+                            }
+                        }
+                    }
+                    var winratio = parseInt((totalwins/(totalwins+totallosses))*100);
+                    var totalgames = parseInt(totalwins+totallosses);
+                    $("#chartTitle").empty()
+                    $("#chartTitle").append("<h3>This Week</h3>")
+                    $("#yourstats").empty()
+                    $("#yourstats").append("<p>Total Wins: "+totalwins+"</p><br><p>Total Losses: "+totallosses+"</p><br><p>Total Games: "+totalgames+"</p><br><p>Win Ratio : "+winratio+"%</p>")                
+                }
+                if (spacetime == "week" ) {
+                    windata=[0,0,0,0,0,0,0];
+                    losedata=[0,0,0,0,0,0,0];
+                    for (k=0;k<windata.length;k++){
+                        for (j=0;j<userdata.length;j++){
+                            gamedate = new Date(userdata[j].date).getDay();
+                            if ( gamedate == (startday.getDay()+k) ){
+                                if( userdata[j].win[0] == true ){
+                                    windata[k+1]++
+                                    totalwins++
+                                }else{
+                                    losedata[k+1]++
+                                    totallosses++
+                                }
+                            }
+                        }
+                    }
+                    var winratio = parseInt((totalwins/(totalwins+totallosses))*100);
+                    var totalgames = parseInt(totalwins+totallosses);
+                    $("#chartTitle").empty()
+                    $("#chartTitle").append("<h3>This Week</h3>")
+                    $("#yourstats").empty()
+                    $("#yourstats").append("<p>Total Wins: "+totalwins+"</p><br><p>Total Losses: "+totallosses+"</p><br><p>Total Games: "+totalgames+"</p><br><p>Win Ratio : "+winratio+"%</p>")
+                } else if(spacetime == "month") {
+                    var l;
+                    windata=[]
+                    losedata=[]
+                    for (l=0;l<time_length.length;l++){
+                        windata.push(0)
+                        losedata.push(0)
+                    }
+                    for (k=0;k<windata.length;k++){
+                        for (j=0;j<userdata.length;j++){
+                            gamedate = new Date(userdata[j].date).getDate();
+                            if ( gamedate == (firstofmonth.getDate()+k) ){
+                                var m;
+                                for(m=0;m<userdata[j].win.length;m++)
+                                if( userdata[j].win[m] == true ){
+                                    windata[k+1]++
+                                    totalwins++
+                                }else{
+                                    losedata[k+1]++
+                                    totallosses++
+                                }
+                            }
+                        }
+                    }
+                    var winratio = parseInt((totalwins/(totalwins+totallosses))*100);
+                    var totalgames = parseInt(totalwins+totallosses);
+                    $("#chartTitle").empty()
+                    $("#chartTitle").append("<h3>This Month</h3>")
+                    $("#yourstats").empty()
+                    $("#yourstats").append("<p>Total Wins: "+totalwins+"</p><br><p>Total Losses: "+totallosses+"</p><br><p>Total Games: "+totalgames+"</p><br><p>Win Ratio : "+winratio+"%</p>")
+                }
+                //draw chart
+                var ctx = document.getElementById("myChart").getContext("2d");
+                var chartdata = {
+                    labels: time_length,
+                    datasets: [
+                        {
+                            label: "Wins",
+                            fillColor: "rgba(220,220,220,0.2)",
+                            strokeColor: "rgba(220,220,220,1)",
+                            pointColor: "rgba(220,220,220,1)",
+                            pointStrokeColor: "#fff",
+                            pointHighlightFill: "#fff",
+                            pointHighlightStroke: "rgba(220,220,220,1)",
+                            data: windata,
+                        },
+                        {
+                            label: "Losses",
+                            fillColor: "rgba(151,187,205,0.2)",
+                            strokeColor: "rgba(151,187,205,1)",
+                            pointColor: "rgba(151,187,205,1)",
+                            pointStrokeColor: "#fff",
+                            pointHighlightFill: "#fff",
+                            pointHighlightStroke: "rgba(151,187,205,1)",
+                            data: losedata,
+                        }
+                    ]
+                };
+                var myLineChart = new Chart(ctx).Line(chartdata, options);
+                new Chart(ctx).Line(chartdata, {
+                    bezierCurve: false
+                });
+            })
+        }
+        
         //document ready do this! ===================
         $(document).ready(function(){
-            $('#date').val(new Date());
             arenaCheck();
-            var parseData = $('#yourdata').val().toJsonObject()
-            console.log(parseData)
+            //get data for charts
+            postData()
         })

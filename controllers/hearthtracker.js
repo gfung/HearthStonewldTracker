@@ -9,20 +9,16 @@ var Tracker = require('../models/hearthtracker');
  * hearthstone tracker main page
  */
 exports.gethearthtracker = function(req, res, next) {
-    Tracker.find({user: req.user._id}).exec(function(err, userdata){
-        return res.render('hearthtracker/tracker', {
-            title: 'Hearthstone Tracker',
-            data: userdata,
-        });
-    })
+    return res.render('hearthtracker/tracker', {
+        title: 'Hearthstone Tracker',
+    });
 };
 
 /**
- * POST /hearthtracker
+ * POST /hearthtrack
  * hearthstone tracker post data
  */
 exports.posthearthtracker = function(req, res, next) {
-    console.log(req.user)
     if (typeof req.body.enemy_hero != "string"){
         req.body.enemy_hero = [req.body.enemy_hero]
     }
@@ -43,3 +39,14 @@ exports.posthearthtracker = function(req, res, next) {
         return res.status(200).redirect('/hearthtrack')
     })
 };
+
+/**
+ * POST /hearthtrack/userdata
+ * hearthstone tracker post data
+ */
+exports.posthearthtrackerData = function(req, res, next) {
+    Tracker.find({user: req.user._id, "date":{"$gte": req.body.start, $lt: req.body.end} }).sort('date').exec(function(err, data){
+        if (err){return next(err)};
+        res.send(data)
+    })
+}

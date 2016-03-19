@@ -195,6 +195,7 @@ app.post('/game/test', userController.postGameTest)
  */ 
 app.get('/hearthtrack', passportConfig.isAuthenticated, hearthContoller.gethearthtracker)
 app.post('/hearthtrack', passportConfig.isAuthenticated, hearthContoller.posthearthtracker) 
+app.post('/hearthtrack/userdata', passportConfig.isAuthenticated, hearthContoller.posthearthtrackerData) 
  
 /**
  * Error Handler.
